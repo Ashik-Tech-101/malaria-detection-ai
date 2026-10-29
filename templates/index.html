@@ -67,7 +67,7 @@
   </section>
 </div>
 <div class="notice" id="notice" role="status" hidden></div>
-{% if not model_ready %}<div class="model-notice"><span class="notice-icon">!</span><div><b>Model not connected</b><p>{{ model_error }} Add a trained model to <code>models/malaria_cnn.keras</code> to enable predictions.</p></div></div>{% endif %}
+{% if not model_ready %}<div class="model-notice"><span class="notice-icon">!</span><div><b>Model not connected</b><p>{{ model_error }}{% if 'MALARIA_MODEL_TOKEN' in model_error %} Add a fine-grained GitHub token with read-only access to the private model repository in Render’s Environment settings, then redeploy.{% elif 'Model file not found' in model_error %} Add a compatible trained model at <code>models/malaria_cnn.keras</code> or configure private model access.{% endif %}</p></div></div>{% endif %}
 </section>
 <section class="profile-card" aria-labelledby="profile-name">
   <div class="profile-accent" aria-hidden="true"></div>
