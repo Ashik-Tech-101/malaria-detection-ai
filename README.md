@@ -2,6 +2,8 @@
 
 A standalone, local-first research prototype for classifying thin blood-smear cell images as **Parasitized** or **Uninfected**. It includes a two-stage MobileNetV2 transfer-learning pipeline, evaluation plots and metrics, and a Flask inference interface. The app validates uploads, reports missing or incompatible models, and avoids Flask debug mode.
 
+**Live dashboard:** <https://malaria-detection-ai.onrender.com/> — public UI and validation charts; prediction is disabled because model weights are intentionally kept private.
+
 > **Research use only.** This project is not a medical device and must not be used to diagnose or guide treatment. A classifier trained on a small or unrepresentative subset can fail on real-world images. Results require clinical validation by qualified professionals.
 
 ## Project contents
@@ -10,6 +12,7 @@ A standalone, local-first research prototype for classifying thin blood-smear ce
 - `train.py` — reproducible stratified split, training-only augmentation, pretrained MobileNetV2 feature extraction and fine-tuning, checkpointing, early stopping, and evaluation artifacts.
 - `templates/index.html`, `static/` — responsive microscopy interface with a compact specimen preview, score doughnut, per-image score histogram, validation grouped bars, and a tab-scoped historical trend.
 - `requirements.txt` — light inference dependencies.
+- `render.yaml`, `requirements-deploy.txt` — Render Blueprint and production web-server dependencies.
 - `requirements-training.txt` — additional deep-learning and evaluation dependencies.
 
 ## 1. Prepare data
