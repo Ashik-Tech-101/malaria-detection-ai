@@ -9,3 +9,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: MALARIA_MODEL_PATH
+        value: /tmp/malaria_cnn.keras
+      - key: MALARIA_MODEL_URL
+        value: https://api.github.com/repos/Ashik-Tech-101/malaria-model-weights/contents/malaria_cnn.keras?ref=main
+      - key: MALARIA_MODEL_SHA256
+        value: 0f37bc259a3d67f2e9d79373ab18157638d3a4da522a81a2f7311e0264e65da4
+      - key: MALARIA_MODEL_TOKEN
+        sync: false

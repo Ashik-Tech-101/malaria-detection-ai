@@ -3,9 +3,14 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import tempfile
 from datetime import datetime, timezone
+from hashlib import sha256
 from pathlib import Path
 from threading import Lock
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 import numpy as np
 from flask import Flask, jsonify, render_template, request
@@ -26,6 +31,88 @@ model = None
 model_error = "Model file not found. Train the model or set MALARIA_MODEL_PATH."
 inference_lock = Lock()
 METRICS_PATH = BASE_DIR / "reports" / "metrics.json"
+MAX_MODEL_DOWNLOAD_BYTES = 100 * 1024 * 1024
+
+
+def resolve_model_path() -> Path:
+    if MODEL_PATH.is_file():
+        return MODEL_PATH
+
+    model_url = os.environ.get("MALARIA_MODEL_URL", "")
+    if not model_url:
+        raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
+
+    token = os.environ.get("MALARIA_MODEL_TOKEN", "")
+    if not token:
+        raise ValueError("Private model access is not configured. Set MALARIA_MODEL_TOKEN.")
+
+    expected_hash = os.environ.get("MALARIA_MODEL_SHA256", "").lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+        raise ValueError("MALARIA_MODEL_SHA256 must contain the model's 64-character SHA-256.")
+
+    parsed_url = urlparse(model_url)
+    if (
+        parsed_url.scheme != "https"
+        or parsed_url.hostname != "api.github.com"
+        or parsed_url.username is not None
+        or parsed_url.password is not None
+        or parsed_url.port is not None
+        or parsed_url.fragment
+    ):
+        raise ValueError("MALARIA_MODEL_URL must be an HTTPS GitHub Contents API URL.")
+
+    target_path = MODEL_PATH
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    if target_path.is_file() and _file_sha256(target_path) == expected_hash:
+        return target_path
+
+    request = Request(
+        model_url,
+        headers={
+            "Accept": "application/vnd.github.raw",
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "malaria-detection-ai",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    temporary_path = None
+    digest = sha256()
+    total_bytes = 0
+    try:
+        with urlopen(request, timeout=90) as response:
+            content_length = response.headers.get("Content-Length")
+            if content_length and int(content_length) > MAX_MODEL_DOWNLOAD_BYTES:
+                raise ValueError("Private model file exceeds the 100 MB download limit.")
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=target_path.parent,
+                prefix=f".{target_path.name}.",
+                suffix=".download",
+                delete=False,
+            ) as output:
+                temporary_path = Path(output.name)
+                while chunk := response.read(1024 * 1024):
+                    total_bytes += len(chunk)
+                    if total_bytes > MAX_MODEL_DOWNLOAD_BYTES:
+                        raise ValueError("Private model file exceeds the 100 MB download limit.")
+                    digest.update(chunk)
+                    output.write(chunk)
+
+        if digest.hexdigest() != expected_hash:
+            raise ValueError("Downloaded model SHA-256 does not match MALARIA_MODEL_SHA256.")
+        os.replace(temporary_path, target_path)
+        return target_path
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
+def _file_sha256(path: Path) -> str:
+    digest = sha256()
+    with path.open("rb") as model_file:
+        for chunk in iter(lambda: model_file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def validate_model(loaded_model) -> tuple[int, int]:
@@ -47,13 +134,10 @@ def validate_model(loaded_model) -> tuple[int, int]:
 
 def load_model() -> None:
     global model, model_error, model_input_size
-    if not MODEL_PATH.is_file():
-        model = None
-        model_error = f"Model not found at {MODEL_PATH}"
-        return
     try:
+        model_path = resolve_model_path()
         import tensorflow as tf
-        loaded_model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        loaded_model = tf.keras.models.load_model(model_path, compile=False)
         model_input_size = validate_model(loaded_model)
         model = loaded_model
         model_error = ""

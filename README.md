@@ -2,7 +2,7 @@
 
 A standalone, local-first research prototype for classifying thin blood-smear cell images as **Parasitized** or **Uninfected**. It includes a two-stage MobileNetV2 transfer-learning pipeline, evaluation plots and metrics, and a Flask inference interface. The app validates uploads, reports missing or incompatible models, and avoids Flask debug mode.
 
-**Live dashboard:** <https://malaria-detection-ai.onrender.com/> — public UI and validation charts; prediction is disabled because model weights are intentionally kept private.
+**Live dashboard:** <https://malaria-detection-ai.onrender.com/> — predictions use model weights stored in a separate private GitHub repository.
 
 > **Research use only.** This project is not a medical device and must not be used to diagnose or guide treatment. A classifier trained on a small or unrepresentative subset can fail on real-world images. Results require clinical validation by qualified professionals.
 
@@ -67,7 +67,7 @@ For local web-only setup, install `requirements.txt`. TensorFlow is only needed 
 
 ## 5. Deploy the public UI to Render
 
-This repository intentionally excludes the trained model and all dataset images. The Render deployment serves the dashboard and validation metrics, but predictions remain unavailable until a compatible model is provisioned privately; `/predict` reports that the model is not ready rather than returning a fabricated result. Never commit model files, dataset images, credentials, or patient data to this public repository.
+This public repository intentionally excludes the trained model and all dataset images. Render downloads the model at startup from the separate private repository `Ashik-Tech-101/malaria-model-weights`, verifies its SHA-256, and caches it in `/tmp`. The weights and access token must never be committed to this repository. Prediction stays unavailable until Render has a read-only token for the private model repository.
 
 Deploy using the included `render.yaml`:
 
@@ -75,7 +75,15 @@ Deploy using the included `render.yaml`:
 2. Connect `Ashik-Tech-101/malaria-detection-ai`.
 3. Review the service settings and apply the Blueprint.
 
-The Blueprint uses Render's free web-service plan, Python 3.11.9, Gunicorn, and `/health` as its health check. Free instances can spin down when idle. To enable inference later, arrange a private model delivery/storage method, set `MALARIA_MODEL_PATH`, and add a compatible TensorFlow runtime to the service build; do not make the weights public just to enable predictions.
+The Blueprint uses Render's free web-service plan, Python 3.11.9, Gunicorn, TensorFlow, and `/health` as its health check. Free instances can spin down when idle and have limited memory. The model path, private GitHub Contents URL, and SHA-256 are configured in `render.yaml`; the access token is deliberately not stored there.
+
+To enable predictions on a newly created Render service:
+
+1. Create a GitHub fine-grained personal access token limited to the `malaria-model-weights` repository, with **Contents: Read-only** permission. Never paste the token into chat or commit it to source.
+2. In Render, open the `malaria-detection-ai` service → **Environment** → **Add Environment Variable**. Set `MALARIA_MODEL_TOKEN` to the token and save changes to deploy.
+3. Check `/health` for `"model_loaded": true`, then analyze a specimen on the live dashboard.
+
+The app downloads only over HTTPS from `api.github.com`, caps the model download at 100 MB, verifies the configured SHA-256 before loading, and reports a clear readiness error if private access or TensorFlow is unavailable. Render free instances may not have enough memory for TensorFlow inference; if a deploy restarts or fails from memory pressure, use a higher-memory Render instance before relying on predictions.
 
 ## Data and interpretation notes
 
