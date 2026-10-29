@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08151b"><link rel="icon" href="data:,"><meta name="description" content="Malaria Detection AI — image-level malaria screening research with transparent model scores."><title>Malaria Detection AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+<div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+<header class="topbar"><a class="brand" href="/"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>MALARIA DETECTION AI<small>MICROSCOPY RESEARCH</small></span></a><div class="topbar-actions"><div class="top-meta"><span class="pulse"></span><span id="model-status">{{ 'MODEL READY' if model_ready else 'MODEL SETUP REQUIRED' }}</span></div><button class="palette-button" id="palette-toggle" type="button" aria-label="Change color palette. Current palette: Aqua" title="Change color palette"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.2a2 2 0 0 0 1.4-3.4 1.7 1.7 0 0 1 1.2-2.9H18a3 3 0 0 0 3-3c0-4.8-4-8.7-9-8.7Z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/><circle cx="17" cy="11" r="1"/></svg><span id="palette-name">Aqua</span></button></div></header>
+<main>
+<section class="hero"><div class="eyebrow"><span class="eyebrow-line"></span> MALARIA IMAGE SCREENING <span class="eyebrow-index">RESEARCH PROTOTYPE</span></div><h1>Closer looks.<br><em>Clearer insights.</em></h1><p class="hero-copy">Upload one blood-smear cell image to view its model classification and score breakdown. Designed for research and education—not diagnosis.</p><div class="hero-tags"><span><i></i> IMAGE-LEVEL ANALYSIS</span><span><i></i> PRIVATE, LOCAL PROCESSING</span><span><i></i> TRANSPARENT SCORES</span></div></section>
+<section class="workspace"><div class="workspace-head"><div><div class="section-kicker">SCREENING WORKSPACE</div><h2>Review a specimen</h2></div><div class="step"><span>INPUT</span> ONE CELL IMAGE</div></div>
+<div class="analysis-layout">
+  <aside class="specimen-column">
+    <div class="specimen-heading"><span class="section-kicker">SPECIMEN</span><button id="remove-image" aria-label="Remove image" hidden>×</button></div>
+    <div class="upload-panel" id="drop-zone">
+      <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+      <div class="upload-empty" id="upload-empty"><div class="scan-icon"><span></span><span></span><span></span><span></span><div class="scan-cross">+</div></div><div class="upload-title">Choose a smear image</div><p>Drop an image or <button class="text-button" id="browse">browse files</button></p><div class="file-meta"><span>PNG · JPG · WEBP</span><span>UP TO 12 MB</span></div></div>
+      <img id="preview" class="preview" alt="Selected blood smear image" hidden>
+      <div class="corner corner-tl"></div><div class="corner corner-tr"></div><div class="corner corner-bl"></div><div class="corner corner-br"></div>
+    </div>
+    <div class="specimen-meta" id="specimen-meta">NO IMAGE SELECTED</div>
+    <button class="analyze-button" id="analyze" disabled><span>Analyze image</span><span class="arrow">↗</span></button>
+  </aside>
+  <section class="results-column" aria-labelledby="results-heading">
+    <div class="result-top"><div><div class="section-kicker">MODEL REPORT</div><h2 id="results-heading">Image insights</h2></div><span class="result-state" id="result-state"><i></i> READY WHEN YOU ARE</span></div>
+    <div class="result-placeholder" id="result-placeholder"><div class="orb"><div class="orb-core"></div><div class="orb-ring"></div><div class="orb-ring second"></div></div><p>Your image report starts here</p><span>Add one smear image to view classification scores.</span></div>
+    <div class="result-loading" id="result-loading" role="status" aria-live="polite" hidden><span class="loading-spinner" aria-hidden="true"></span><p>Reviewing image…</p><span>Calculating class scores</span></div>
+    <div id="result" class="insight-grid" hidden>
+      <article class="insight-card confidence-card">
+        <div class="card-heading"><div><span class="card-index">01 / CLASSIFICATION</span><h3>Classification confidence</h3></div><span class="metric-pill">IMAGE-LEVEL SCORE</span></div>
+        <div class="confidence-content">
+          <div class="confidence-donut" id="confidence-donut" role="img" aria-label="Prediction score breakdown"><div><strong id="confidence">—</strong><span>MODEL SCORE</span></div></div>
+          <div class="prediction-detail"><span class="result-label">PREDICTED CLASS</span><h4 id="prediction">—</h4><div class="score-legend"><div><span><i class="dot infected"></i>Parasitized probability</span><b id="p-infected">—</b></div><div><span><i class="dot healthy"></i>Uninfected probability</span><b id="p-healthy">—</b></div></div></div>
+        </div>
+        <p class="card-footnote">Model scores are not calibrated diagnostic probabilities. This research tool cannot diagnose malaria.</p>
+      </article>
+      <article class="insight-card distribution-card">
+        <div class="card-heading"><div><span class="card-index">02 / RECENT IMAGE SCORES</span><h3>Parasitized score distribution</h3></div><span class="metric-pill">SCORE HISTOGRAM</span></div>
+        <div class="histogram-summary"><strong id="histogram-count">0</strong><span>image analyses in histogram</span></div>
+        <svg id="load-histogram" class="data-chart histogram-chart" viewBox="0 0 360 170" role="img" aria-label="Histogram of per-image parasitized model scores, grouped into ten-point score ranges"></svg>
+        <p class="card-footnote">Each bar counts image scores in a range; it is not parasite density. Cell counting and parasitemia are not measured.</p>
+      </article>
+      <article class="insight-card performance-card">
+        <div class="card-heading"><div><span class="card-index">03 / MODEL VALIDATION</span><h3>Validation performance</h3></div><span class="metric-pill">TRAINING REPORT</span></div>
+        <div class="performance-summary">
+          <div><span>ACCURACY</span><strong id="validation-accuracy">—</strong></div>
+          <div><span>ROC AUC</span><strong id="validation-auc">—</strong></div>
+        </div>
+        <div class="chart-legend"><span><i class="legend-swatch parasitized-swatch"></i>Parasitized</span><span><i class="legend-swatch uninfected-swatch"></i>Uninfected</span></div>
+        <svg id="performance-chart" class="data-chart performance-chart" viewBox="0 0 360 170" role="img" aria-label="Grouped validation precision, recall and F1 score bars for parasitized and uninfected classes"></svg>
+        <p class="card-footnote" id="metrics-note" role="status">Loading validation metrics…</p>
+      </article>
+      <article class="insight-card trend-card">
+        <div class="card-heading"><div><span class="card-index">04 / THIS BROWSER TAB</span><h3>Recent score trend</h3></div><button class="clear-history" id="clear-history" type="button">Clear history</button></div>
+        <div class="trend-summary"><strong id="trend-current">—</strong><span>parasitized model score</span></div>
+        <svg id="trend-chart" class="trend-chart" viewBox="0 0 360 150" role="img" aria-label="Parasitized model score trend from 0 to 100 percent across this browser tab's recent image analyses"></svg>
+        <div class="trend-labels"><span>EARLIER</span><span>MOST RECENT</span></div>
+        <p class="card-footnote">Private to this tab. Not patient history or disease progression.</p>
+      </article>
+      <div class="timestamp insight-timestamp" id="timestamp"></div>
+    </div>
+  </section>
+</div>
+<div class="notice" id="notice" role="status" hidden></div>
+{% if not model_ready %}<div class="model-notice"><span class="notice-icon">!</span><div><b>Model not connected</b><p>{{ model_error }} Add a trained model to <code>models/malaria_cnn.keras</code> to enable predictions.</p></div></div>{% endif %}
+</section>
+<section class="profile-card" aria-labelledby="profile-name">
+  <div class="profile-accent" aria-hidden="true"></div>
+  <div class="profile-main">
+    <div class="profile-avatar" aria-hidden="true"><span>AKS</span><i></i></div>
+    <div class="profile-intro">
+      <span class="profile-kicker"><span class="profile-status"></span> PROJECT DEVELOPER</span>
+      <h2 id="profile-name">Ashik Kumar Sahu</h2>
+      <p class="profile-degree"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 9 10-5 10 5-10 5L2 9Z"/><path d="M6 11v5c3.5 2.5 8.5 2.5 12 0v-5M22 9v6"/></svg><span>B.Tech · Artificial Intelligence &amp; Machine Learning</span></p>
+      <p class="profile-institution">Lakshmi Narain College of Technology (LNCT), Bhopal</p>
+      <a class="profile-email" href="mailto:ashiksahu246@gmail.com"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span>ashiksahu246@gmail.com</span></a>
+    </div>
+  </div>
+  <div class="profile-links" aria-label="Professional profiles">
+    <a class="profile-link linkedin-link" href="https://www.linkedin.com/in/ashik-kumar-aiml-maihar241/" target="_blank" rel="noopener noreferrer" aria-label="Open Ashik Kumar Sahu's LinkedIn profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5v10M5 5.2v.1M9.5 18.5v-6a4 4 0 0 1 8 0v6M9.5 10v8.5"/></svg><span>LinkedIn</span><b aria-hidden="true">↗</b></a>
+    <a class="profile-link github-link" href="https://github.com/Ashik-Tech-101" target="_blank" rel="noopener noreferrer" aria-label="Open Ashik Kumar Sahu's GitHub profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.2-6-2.7m12 5.4v-3.3a2.9 2.9 0 0 0-.8-2.2c2.7-.3 5.6-1.3 5.6-6a4.7 4.7 0 0 0-1.3-3.3 4.4 4.4 0 0 0-.1-3.3s-1-.3-3.4 1.3a11.8 11.8 0 0 0-6.2 0C6.4 3.3 5.4 3.6 5.4 3.6a4.4 4.4 0 0 0-.1 3.3A4.7 4.7 0 0 0 4 10.2c0 4.7 2.9 5.7 5.6 6a2.9 2.9 0 0 0-.8 2.2v3.3"/></svg><span>GitHub</span><b aria-hidden="true">↗</b></a>
+    <a class="profile-link leetcode-link" href="https://leetcode.com/u/Ashik-Tech-101/" target="_blank" rel="noopener noreferrer" aria-label="Open Ashik Kumar Sahu's LeetCode profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 3-8.2 8.2a4 4 0 0 0 0 5.6l3.2 3.2a4 4 0 0 0 5.6 0l1.2-1.2M9 8.5l6.5 6.5M13 5l5 5"/></svg><span>LeetCode</span><b aria-hidden="true">↗</b></a>
+  </div>
+</section>
+<footer><span>MALARIA DETECTION AI <span class="footer-dot">●</span> RESEARCH &amp; EDUCATION</span><span>NOT A MEDICAL DEVICE</span></footer>
+</main><script src="{{ url_for('static', filename='app.js') }}"></script></body></html>

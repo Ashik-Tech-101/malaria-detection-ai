@@ -1,0 +1,36 @@
+{
+  "Parasitized": {
+    "precision": 0.9617612977983777,
+    "recall": 0.9034833091436865,
+    "f1-score": 0.9317118802619271,
+    "support": 2756.0
+  },
+  "Uninfected": {
+    "precision": 0.9089976052001368,
+    "recall": 0.964078374455733,
+    "f1-score": 0.9357281211480895,
+    "support": 2756.0
+  },
+  "accuracy": 0.9337808417997098,
+  "macro avg": {
+    "precision": 0.9353794514992573,
+    "recall": 0.9337808417997098,
+    "f1-score": 0.9337200007050083,
+    "support": 5512.0
+  },
+  "weighted avg": {
+    "precision": 0.9353794514992573,
+    "recall": 0.9337808417997098,
+    "f1-score": 0.9337200007050084,
+    "support": 5512.0
+  },
+  "roc_auc": 0.9836783078903186,
+  "split": {
+    "train": 22046,
+    "validation": 5512,
+    "seed": 42,
+    "note": "Random image-level split; use patient-level grouping when identifiers are available."
+  },
+  "model": "MobileNetV2 ImageNet transfer learning with fine-tuning",
+  "image_size": 128
+}
